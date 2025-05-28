@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>T-Shirt Store</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <nav>
+    <div class="nav-container">
+      <h1 class="logo">T-Shirt Store</h1>
+      <ul class="nav-links">
+        <li><a href="#product-grid">Products</a></li>
+        <li><a href="#cart">Cart</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <section>
+    <h2>Products</h2>
+<div class="product-grid" id="product-grid"></div>
+  </section>
+
+
+
+    <section id="cart">
+      <h2>Your Cart</h2>
+      <ul id="cart-items"></ul>
+      <form id="checkout-form">
+        <h3>Checkout Details</h3>
+          <label>Full Name: <input type="text" id="customer-name" required></label>
+          <label>Email: <input type="email" id="customer-email" required></label>
+          <label>Phone Number: <input type="number" id="customer-number" min="10" required></label>
+          <label>Address: <input id="customer-address" required></input></label>
+        <button type="submit">Submit Order</button>
+      </form>
+    </section>
+  </main>
+
+  <div id="popup" class="popup hidden">
+    <div class="popup-content">
+      <span class="close-btn">&times;</span>
+      <h3 id="popup-title"></h3>
+      <label>Size:</label>
+      <select id="popup-size">
+        <option value="S">Small</option>
+        <option value="M">Medium</option>
+        <option value="L">Large</option>
+        <option value="XL">XL</option>
+      </select>
+      <label>Quantity:</label>
+      <input type="number" id="popup-quantity" value="1" min="1" />
+      <button id="quick-order-btn">Add to Cart</button>
+    </div>
+  </div>
+
+  <footer>
+    <p>&copy; 2025 T-Shirt Store. All rights reserved.</p>
+  </footer>
+
+  <script>
+    const cart = [];
+    let selectedProduct = '';
+
+  async function loadProducts() {
+    const res = await fetch('/products');
+    const products = await res.json();
+
+    const grid = document.getElementById('product-grid');
+    grid.innerHTML = ''; // Clear if reloading
+
+    products.forEach(p => {
+      const card = document.createElement('div');
+      card.className = 'product-card';
+      card.dataset.name = p.name;
+      card.dataset.id = p._id;
+
+      card.innerHTML = `
+        <img src="${p.imageUrl || 'https://via.placeholder.com/300'}" alt="${p.name}" style="height:200px; width:auto;">
+        <h3>${p.name}</h3>
+        <p>NRS.${p.price.toFixed(2)}</p>
+      `;
+
+      card.addEventListener('click', () => {
+        selectedProduct = p.name;
+        document.getElementById('popup-title').innerText = selectedProduct;
+        document.getElementById('popup').classList.remove('hidden');
+      });
+
+      grid.appendChild(card);
+    });
+  }
+
+  // Call this on page load
+  window.addEventListener('DOMContentLoaded', loadProducts);
+
+
+    document.querySelectorAll('.product-card').forEach(card => {
+      card.addEventListener('click', () => {
+        selectedProduct = card.dataset.name;
+        document.getElementById('popup-title').innerText = selectedProduct;
+        document.getElementById('popup').classList.remove('hidden');
+      });
+    });
+
+    document.querySelector('.close-btn').addEventListener('click', () => {
+      document.getElementById('popup').classList.add('hidden');
+    });
+
+    document.getElementById('quick-order-btn').addEventListener('click', () => {
+      const size = document.getElementById('popup-size').value;
+      const quantity = parseInt(document.getElementById('popup-quantity').value);
+      cart.push({ product: selectedProduct, size, quantity });
+      updateCartDisplay();
+      document.getElementById('popup').classList.add('hidden');
+    });
+
+    function updateCartDisplay() {
+      const cartList = document.getElementById('cart-items');
+      cartList.innerHTML = '';
+      cart.forEach(item => {
+        const li = document.createElement('li');
+        li.textContent = `${item.quantity}x ${item.product} (Size: ${item.size})`;
+        cartList.appendChild(li);
+      });
+    }
+
+    document.getElementById('checkout-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      if (cart.length === 0) return alert('Cart is empty.');
+
+      const formData = new FormData(e.target);
+      const customerInfo = Object.fromEntries(formData.entries());
+
+
+
+const name = document.getElementById('customer-name').value.trim();
+const email = document.getElementById('customer-email').value.trim();
+const number = document.getElementById('customer-number').value;
+const address = document.getElementById('customer-address').value.trim();
+
+if (!name || !email || !number || !address) {
+  alert('Please fill out all customer information.');
+  return;
+}
+
+const response = await fetch('/checkout', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    customerName: name,
+    email,
+    number,
+    address,
+    cart
+  })
+});
+
+
+      const result = await response.json();
+      alert(result.message);
+      cart.length = 0;
+      updateCartDisplay();
+      e.target.reset();
+    });
+
+    
+  </script>
+</body>
+</html>
