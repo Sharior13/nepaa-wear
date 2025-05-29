@@ -12,6 +12,12 @@ h1, h2, h3 {
   margin: 0.5em 0;
 }
 
+
+a{
+  color: white;
+  text-decoration: none;
+}
+
 /* Navigation */
 nav {
   background-color: #343a40;
