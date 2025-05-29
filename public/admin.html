@@ -9,21 +9,21 @@
 <body>
     <nav>
     <div class="nav-container">
-      <h1 class="logo">T-Shirt Store</h1>
+      <h1 class="logo"><a href="/">T-Shirt Store</a></h1>
       <ul class="nav-links">
         <li><a href="#"></a></li>
-        <li><a href="#"></a></li>
+        <li><a onclick="logout()">Logout</a></li>
       </ul>
     </div>
   </nav>
   <h1>Admin Dashboard</h1>
   <div id="admin-content"><section>
   <h2>Manage T-Shirts</h2>
-  <form id="product-form">
+  <form id="product-form" enctype="multipart/form-data">
     <input type="text" id="prod-name" placeholder="Name" required>
     <input type="text" id="prod-desc" placeholder="Description">
-    <input type="number" id="prod-price" placeholder="Price" required>
-    <input type="text" id="prod-img" placeholder="Image URL">
+    <input type="number" id="prod-price" placeholder="Price" step="0.01" required>
+    <input type="file" id="prod-imgs" name="images" multiple accept="image/*">
     <button type="submit">Add Product</button>
   </form>
   <ul id="product-list"></ul>
@@ -36,48 +36,48 @@
   <footer>
     <p>&copy; 2025 T-Shirt Store. All rights reserved.</p>
   </footer>
-  <script>
-    async function fetchOrders() {
-      const res = await fetch('/admin/orders');
-      const orders = await res.json();
-      const container = document.getElementById('orders-container');
-      container.innerHTML = '';
+<script>
+  let editingProductId = null;
+  const form = document.getElementById('product-form');
+  const submitBtn = form.querySelector('button');
 
-      orders.forEach(order => {
-        const div = document.createElement('div');
-        div.className = 'order';
-        div.innerHTML = `
-          <strong>Customer:</strong> ${order.customerName}<br/>
-          <strong>Email:</strong> ${order.email}<br/>
-          <strong>Phone Number:</strong> ${order.number}<br/>
-          <strong>Address:</strong> ${order.address}<br/>
-          <strong>Status:</strong> <span id="status-${order._id}">${order.status}</span><br/>
-          <strong>Created At:</strong> ${new Date(order.createdAt).toLocaleString()}
-          <ul class="order-items">
-            ${order.items.map(item =>
-              `<li>${item.quantity}x ${item.product} (Size: ${item.size})</li>`
-            ).join('')}
-          </ul>
-          ${order.status === 'Pending' ? `
-            <button onclick="markCompleted('${order._id}')">Mark as Completed</button>
-          ` : ''}
-        `;
-        container.appendChild(div);
-      });
-    }
+  async function fetchOrders() {
+    const res = await fetch('/admin/orders');
+    const orders = await res.json();
+    const container = document.getElementById('orders-container');
+    container.innerHTML = '';
 
-    async function markCompleted(orderId) {
-      const res = await fetch(`/admin/orders/${orderId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'Completed' })
-      });
-      const updated = await res.json();
-      document.getElementById(`status-${orderId}`).innerText = updated.status;
-      fetchOrders(); // refresh
-    }
+    orders.forEach(order => {
+      const div = document.createElement('div');
+      div.className = 'order';
+      div.innerHTML = `
+        <strong>Customer:</strong> ${order.customerName}<br/>
+        <strong>Email:</strong> ${order.email}<br/>
+        <strong>Phone Number:</strong> ${order.number}<br/>
+        <strong>Address:</strong> ${order.address}<br/>
+        <strong>Status:</strong> <span id="status-${order._id}">${order.status}</span><br/>
+        <strong>Created At:</strong> ${new Date(order.createdAt).toLocaleString()}
+        <ul class="order-items">
+          ${order.items.map(item =>
+            `<li>${item.quantity}x ${item.product} (Size: ${item.size})</li>`
+          ).join('')}
+        </ul>
+        ${order.status === 'Pending' ? `
+          <button onclick="markCompleted('${order._id}')">Mark as Completed</button>
+        ` : ''}
+      `;
+      container.appendChild(div);
+    });
+  }
 
+  async function markCompleted(orderId) {
+    await fetch(`/admin/orders/${orderId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'Completed' })
+    });
     fetchOrders();
+  }
 
   async function loadProducts() {
     const res = await fetch('/admin/products');
@@ -88,7 +88,7 @@
     products.forEach(p => {
       const li = document.createElement('li');
       li.innerHTML = `
-        <strong>${p.name}</strong> - $${p.price}
+        <strong>${p.name}</strong> - NRS.${p.price}
         <button onclick="deleteProduct('${p._id}')">Delete</button>
         <button onclick='editProduct(${JSON.stringify(p)})'>Edit</button>
       `;
@@ -96,63 +96,86 @@
     });
   }
 
-  document.getElementById('product-form').addEventListener('submit', async (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const product = {
-      name: document.getElementById('prod-name').value,
-      description: document.getElementById('prod-desc').value,
-      price: parseFloat(document.getElementById('prod-price').value),
-      imageUrl: document.getElementById('prod-img').value
-    };
 
-    await fetch('/admin/products', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(product)
-    });
+    const name = document.getElementById('prod-name').value;
+    const description = document.getElementById('prod-desc').value;
+    const price = document.getElementById('prod-price').value;
+    const files = document.getElementById('prod-imgs').files;
+
+    if (editingProductId) {
+      // --- Edit mode ---
+      if (files.length > 0) {
+        const formData = new FormData();
+        formData.append('name', name);
+        formData.append('description', description);
+        formData.append('price', price);
+        for (let i = 0; i < files.length; i++) {
+          formData.append('images', files[i]);
+        }
+
+        await fetch(`/admin/products/${editingProductId}`, {
+          method: 'PUT',
+          body: formData
+        });
+      } else {
+        await fetch(`/admin/products/${editingProductId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, description, price })
+        });
+      }
+
+      alert('Product updated!');
+      editingProductId = null;
+      submitBtn.textContent = 'Add Product';
+    } else {
+      // --- Add mode ---
+      const formData = new FormData();
+      formData.append('name', name);
+      formData.append('description', description);
+      formData.append('price', price);
+      for (let i = 0; i < files.length; i++) {
+        formData.append('images', files[i]);
+      }
+
+      await fetch('/admin/products', {
+        method: 'POST',
+        body: formData
+      });
+
+      alert('Product added!');
+    }
 
     e.target.reset();
     loadProducts();
   });
+
+  function editProduct(p) {
+    document.getElementById('prod-name').value = p.name;
+    document.getElementById('prod-desc').value = p.description;
+    document.getElementById('prod-price').value = p.price;
+    document.getElementById('prod-imgs').value = '';
+    editingProductId = p._id;
+    submitBtn.textContent = 'Update Product';
+  }
 
   async function deleteProduct(id) {
     await fetch(`/admin/products/${id}`, { method: 'DELETE' });
     loadProducts();
   }
 
-  function editProduct(p) {
-    document.getElementById('prod-name').value = p.name;
-    document.getElementById('prod-desc').value = p.description;
-    document.getElementById('prod-price').value = p.price;
-    document.getElementById('prod-img').value = p.imageUrl;
-
-    // Replace form submit temporarily
-    const form = document.getElementById('product-form');
-    form.onsubmit = async (e) => {
-      e.preventDefault();
-      await fetch(`/admin/products/${p._id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: document.getElementById('prod-name').value,
-          description: document.getElementById('prod-desc').value,
-          price: parseFloat(document.getElementById('prod-price').value),
-          imageUrl: document.getElementById('prod-img').value
-        })
-      });
-      form.reset();
-      form.onsubmit = null;
-      loadProducts();
-    };
-  }
-
-  // Load on dashboard load
   function showDashboard() {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('admin-content').style.display = 'block';
-    loadOrders();
-    loadProducts(); // <--- here
+    fetchOrders();
+    loadProducts();
   }
-  </script>
+
+  fetchOrders();
+  loadProducts();
+</script>
+
 </body>
 </html>

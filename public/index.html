@@ -76,11 +76,12 @@
       card.dataset.name = p.name;
       card.dataset.id = p._id;
 
-      card.innerHTML = `
-        <img src="${p.imageUrl || 'https://via.placeholder.com/300'}" alt="${p.name}" style="height:200px; width:auto;">
-        <h3>${p.name}</h3>
-        <p>NRS.${p.price.toFixed(2)}</p>
-      `;
+card.innerHTML = `
+  <img src="${(p.imageUrls && p.imageUrls.length > 0) ? p.imageUrls[0] : 'https://via.placeholder.com/300'}" alt="${p.name}" style="height:200px; width:auto;">
+  <h3>${p.name}</h3>
+  <p>NRS.${p.price.toFixed(2)}</p>
+`;
+
 
       card.addEventListener('click', () => {
         selectedProduct = p.name;
