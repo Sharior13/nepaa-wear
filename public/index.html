@@ -26,7 +26,8 @@
 
     <section id="cart">
       <h2>Your Cart</h2>
-      <ul id="cart-items" class="product-grid"></ul>
+      <ul id="cart-items" class="product-grid"></ul><br>
+      <h4>Your Total:<p id="total-sum">NRS. 0.00</p></h4>
       <form id="checkout-form">
         <h3>Checkout Details</h3>
           <label>Full Name: <input type="text" id="customer-name" required></label>
@@ -42,6 +43,7 @@
     <div class="popup-content">
       <span class="close-btn">&times;</span>
       <h3 id="popup-title"></h3>
+      <span id="popup-img"></span><br><br>
       <label>Size:</label>
       <select id="popup-size">
         <option value="S">Small</option>
@@ -51,6 +53,7 @@
       </select>
       <label>Quantity:</label>
       <input type="number" id="popup-quantity" value="1" min="1" />
+      <br><br>
       <button id="quick-order-btn">Add to Cart</button>
     </div>
   </div>
@@ -82,13 +85,43 @@ card.innerHTML = `
   <p>NRS.${p.price.toFixed(2)}</p>
 `;
 
-card.addEventListener('click', () => {
-  selectedProduct = p;
-  document.getElementById('popup-title').innerText = p.name;
-  document.getElementById('popup').classList.remove('hidden');
-});
-
-
+    card.addEventListener('click', () => {
+      selectedProduct = p;
+      document.getElementById('popup-title').innerText = p.name;
+      document.getElementById('popup-img').innerHTML = `
+      <section class="carousel" aria-label="Gallery">
+  <ol class="carousel__viewport">
+    <li id="carousel__slide1" tabindex="0" class="carousel__slide">
+      <div class="carousel__snapper"><img src="${(p.imageUrls && p.imageUrls.length > 0) ? p.imageUrls[1] : 'https://via.placeholder.com/300'}" alt="${p.name}" style="height:100%; width:auto;"></div>
+        <a href="#carousel__slide2"
+           class="carousel__prev">Go to last slide</a>
+        <a href="#carousel__slide2"
+           class="carousel__next">Go to next slide</a>
+    </li>
+    <li id="carousel__slide2" tabindex="0" class="carousel__slide">
+      <div class="carousel__snapper"><img src="${(p.imageUrls && p.imageUrls.length > 0) ? p.imageUrls[0] : 'https://via.placeholder.com/300'}" alt="${p.name}" style="height:100%; width:auto;"></div>
+      <a href="#carousel__slide1"
+         class="carousel__prev">Go to previous slide</a>
+      <a href="#carousel__slide1"
+         class="carousel__next">Go to first slide</a>
+    </li>
+  </ol>
+  <aside class="carousel__navigation">
+    <ol class="carousel__navigation-list">
+      <li class="carousel__navigation-item">
+        <a href="#carousel__slide1"
+           class="carousel__navigation-button">Go to slide 1</a>
+      </li>
+      <li class="carousel__navigation-item">
+        <a href="#carousel__slide2"
+           class="carousel__navigation-button">Go to slide 2</a>
+      </li>
+    </ol>
+  </aside>
+</section>
+      `;
+      document.getElementById('popup').classList.remove('hidden');
+    });
       grid.appendChild(card);
     });
   }
@@ -125,8 +158,11 @@ document.getElementById('quick-order-btn').addEventListener('click', () => {
 
 function updateCartDisplay() {
   const cartList = document.getElementById('cart-items');
+  const totalSum = document.getElementById('total-sum');
+  let total = 0;
   cartList.innerHTML = '';
   cart.forEach(item => {
+    total += item.quantity * selectedProduct.price;
     const div = document.createElement('div');
     div.className = 'product-card';
     div.style.marginBottom = '1rem';
@@ -135,7 +171,9 @@ function updateCartDisplay() {
       <h3>${item.product}</h3>
       <p>Size: ${item.size}</p>
       <p>Quantity: ${item.quantity}</p>
+      <p>Price: NRS. ${selectedProduct.price.toFixed(2)*item.quantity}</p>
     `;
+    totalSum.innerHTML = `NRS. ${total.toFixed(2)}`;
     cartList.appendChild(div);
   });
 }
