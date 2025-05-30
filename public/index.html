@@ -26,7 +26,7 @@
 
     <section id="cart">
       <h2>Your Cart</h2>
-      <ul id="cart-items"></ul>
+      <ul id="cart-items" class="product-grid"></ul>
       <form id="checkout-form">
         <h3>Checkout Details</h3>
           <label>Full Name: <input type="text" id="customer-name" required></label>
@@ -82,12 +82,12 @@ card.innerHTML = `
   <p>NRS.${p.price.toFixed(2)}</p>
 `;
 
+card.addEventListener('click', () => {
+  selectedProduct = p;
+  document.getElementById('popup-title').innerText = p.name;
+  document.getElementById('popup').classList.remove('hidden');
+});
 
-      card.addEventListener('click', () => {
-        selectedProduct = p.name;
-        document.getElementById('popup-title').innerText = selectedProduct;
-        document.getElementById('popup').classList.remove('hidden');
-      });
 
       grid.appendChild(card);
     });
@@ -109,23 +109,38 @@ card.innerHTML = `
       document.getElementById('popup').classList.add('hidden');
     });
 
-    document.getElementById('quick-order-btn').addEventListener('click', () => {
-      const size = document.getElementById('popup-size').value;
-      const quantity = parseInt(document.getElementById('popup-quantity').value);
-      cart.push({ product: selectedProduct, size, quantity });
-      updateCartDisplay();
-      document.getElementById('popup').classList.add('hidden');
-    });
+document.getElementById('quick-order-btn').addEventListener('click', () => {
+  const size = document.getElementById('popup-size').value;
+  const quantity = parseInt(document.getElementById('popup-quantity').value);
+  cart.push({
+    product: selectedProduct.name,
+    size,
+    quantity,
+    imageUrl: selectedProduct.imageUrls?.[0] || ''
+  });
+  updateCartDisplay();
+  document.getElementById('popup').classList.add('hidden');
+});
 
-    function updateCartDisplay() {
-      const cartList = document.getElementById('cart-items');
-      cartList.innerHTML = '';
-      cart.forEach(item => {
-        const li = document.createElement('li');
-        li.textContent = `${item.quantity}x ${item.product} (Size: ${item.size})`;
-        cartList.appendChild(li);
-      });
-    }
+
+function updateCartDisplay() {
+  const cartList = document.getElementById('cart-items');
+  cartList.innerHTML = '';
+  cart.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'product-card';
+    div.style.marginBottom = '1rem';
+    div.innerHTML = `
+          <img src="${item.imageUrl}" alt="${item.product}"  style="height:200px; width:auto; vertical-align:middle; margin-right:10px;">
+      <h3>${item.product}</h3>
+      <p>Size: ${item.size}</p>
+      <p>Quantity: ${item.quantity}</p>
+    `;
+    cartList.appendChild(div);
+  });
+}
+
+
 
     document.getElementById('checkout-form').addEventListener('submit', async e => {
       e.preventDefault();
