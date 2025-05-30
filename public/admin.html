@@ -61,7 +61,7 @@
 <ul class="order-items">
   ${order.items.map(item =>
     `<li>
-      <img src="${item.imageUrl || ''}" alt="${item.product}"  style="height:200px; width:auto; vertical-align:middle; margin-right:10px;">
+      <img src="${item.imageUrl || ''}" alt="${item.product}"  style="height:200px; width:auto; vertical-align:middle; margin-right:10px;"><br>
       ${item.quantity}x ${item.product} (Size: ${item.size})
     </li>`
   ).join('')}

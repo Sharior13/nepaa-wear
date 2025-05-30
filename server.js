@@ -47,7 +47,8 @@ const OrderSchema = new mongoose.Schema({
     {
       product: String,
       size: String,
-      quantity: Number
+      quantity: Number,
+      imageUrl: String 
     }
   ],
   status: { type: String, enum: ['Pending', 'Completed'], default: 'Pending' },
