@@ -26,7 +26,8 @@
     <input type="file" id="prod-imgs" name="images" multiple accept="image/*">
     <button type="submit">Add Product</button>
   </form>
-  <ul id="product-list"></ul>
+  <div id="product-list" class="product-grid"></div>
+
 </section>
 </div>
 <section>
@@ -57,11 +58,15 @@
         <strong>Address:</strong> ${order.address}<br/>
         <strong>Status:</strong> <span id="status-${order._id}">${order.status}</span><br/>
         <strong>Created At:</strong> ${new Date(order.createdAt).toLocaleString()}
-        <ul class="order-items">
-          ${order.items.map(item =>
-            `<li>${item.quantity}x ${item.product} (Size: ${item.size})</li>`
-          ).join('')}
-        </ul>
+<ul class="order-items">
+  ${order.items.map(item =>
+    `<li>
+      <img src="${item.imageUrl || ''}" alt="${item.product}"  style="height:200px; width:auto; vertical-align:middle; margin-right:10px;">
+      ${item.quantity}x ${item.product} (Size: ${item.size})
+    </li>`
+  ).join('')}
+</ul>
+
         ${order.status === 'Pending' ? `
           <button onclick="markCompleted('${order._id}')">Mark as Completed</button>
         ` : ''}
@@ -79,22 +84,30 @@
     fetchOrders();
   }
 
-  async function loadProducts() {
-    const res = await fetch('/admin/products');
-    const products = await res.json();
-    const list = document.getElementById('product-list');
-    list.innerHTML = '';
+async function loadProducts() {
+  const res = await fetch('/admin/products');
+  const products = await res.json();
+  const list = document.getElementById('product-list');
+  list.innerHTML = ''; // Clear the list
 
-    products.forEach(p => {
-      const li = document.createElement('li');
-      li.innerHTML = `
-        <strong>${p.name}</strong> - NRS.${p.price}
+  products.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'product-card';
+    card.innerHTML = `
+      <img src="${p.imageUrls?.[0] || ''}" alt="${p.name}" style="height:200px; width:auto;"/>
+      <h3>${p.name}</h3>
+      <p>NRS. ${p.price}</p>
+      <div style="display: flex; gap: 0.5em; justify-content: center;">
+        <button onclick="editProduct(${JSON.stringify(p).replace(/"/g, '&quot;')})">Edit</button>
         <button onclick="deleteProduct('${p._id}')">Delete</button>
-        <button onclick='editProduct(${JSON.stringify(p)})'>Edit</button>
-      `;
-      list.appendChild(li);
-    });
-  }
+      </div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+
+
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
