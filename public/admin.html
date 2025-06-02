@@ -1,194 +1,220 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Admin Dashboard - Orders</title>
-  <link rel="stylesheet" href="/styles.css" />
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Dashboard - Orders</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
     <nav>
-    <div class="nav-container">
-      <h1 class="logo"><a href="/">T-Shirt Store</a></h1>
-      <ul class="nav-links">
-        <li><a href="#"></a></li>
-        <li><a onclick="logout()">Logout</a></li>
-      </ul>
+      <div class="nav-container">
+        <h1 class="logo"><a href="/">T-Shirt Store</a></h1>
+        <ul class="nav-links">
+          <li><a href="#"></a></li>
+          <li><a onclick="logout()">Logout</a></li>
+        </ul>
+      </div>
+    </nav>
+    <h1>Admin Dashboard</h1>
+    <div id="admin-content">
+      <section>
+        <h2>Manage T-Shirts</h2>
+        <form id="product-form" enctype="multipart/form-data">
+          <input type="text" id="prod-name" placeholder="Name" required />
+          <input type="text" id="prod-desc" placeholder="Description" />
+          <input
+            type="number"
+            id="prod-price"
+            placeholder="Price"
+            step="0.01"
+            required
+          />
+          <input
+            type="file"
+            id="prod-imgs"
+            name="images"
+            multiple
+            accept="image/*"
+          />
+          <button type="submit">Add Product</button>
+        </form>
+        <div id="product-list" class="product-grid"></div>
+      </section>
     </div>
-  </nav>
-  <h1>Admin Dashboard</h1>
-  <div id="admin-content"><section>
-  <h2>Manage T-Shirts</h2>
-  <form id="product-form" enctype="multipart/form-data">
-    <input type="text" id="prod-name" placeholder="Name" required>
-    <input type="text" id="prod-desc" placeholder="Description">
-    <input type="number" id="prod-price" placeholder="Price" step="0.01" required>
-    <input type="file" id="prod-imgs" name="images" multiple accept="image/*">
-    <button type="submit">Add Product</button>
-  </form>
-  <div id="product-list" class="product-grid"></div>
+    <section>
+      <h2>Orders</h2>
+      <div id="orders-container">Loading orders...</div>
+    </section>
+    <footer>
+      <p>&copy; 2025 T-Shirt Store. All rights reserved.</p>
+    </footer>
+    <script>
+      let editingProductId = null;
+      const form = document.getElementById("product-form");
+      const submitBtn = form.querySelector("button");
 
-</section>
-</div>
-<section>
-  <h2>Orders</h2>
-  <div id="orders-container">Loading orders...</div>
-  </section>
-  <footer>
-    <p>&copy; 2025 T-Shirt Store. All rights reserved.</p>
-  </footer>
-<script>
-  let editingProductId = null;
-  const form = document.getElementById('product-form');
-  const submitBtn = form.querySelector('button');
+      async function fetchOrders() {
+        const res = await fetch("/admin/orders");
+        const orders = await res.json();
+        const container = document.getElementById("orders-container");
+        container.innerHTML = "";
 
-  async function fetchOrders() {
-    const res = await fetch('/admin/orders');
-    const orders = await res.json();
-    const container = document.getElementById('orders-container');
-    container.innerHTML = '';
-
-    orders.forEach(order => {
-      const div = document.createElement('div');
-      div.className = 'order';
-      div.innerHTML = `
+        orders.forEach((order) => {
+          const div = document.createElement("div");
+          div.className = "order";
+          div.innerHTML = `
         <strong>Customer:</strong> ${order.customerName}<br/>
         <strong>Email:</strong> ${order.email}<br/>
         <strong>Phone Number:</strong> ${order.number}<br/>
         <strong>Address:</strong> ${order.address}<br/>
-        <strong>Status:</strong> <span id="status-${order._id}">${order.status}</span><br/>
-        <strong>Created At:</strong> ${new Date(order.createdAt).toLocaleString()}
+        <strong>Status:</strong> <span id="status-${order._id}">${
+            order.status
+          }</span><br/>
+        <strong>Created At:</strong> ${new Date(
+          order.createdAt
+        ).toLocaleString()}
 <ul class="order-items">
-  ${order.items.map(item =>
-    `<li>
-      <img src="${item.imageUrl || ''}" alt="${item.product}"  style="height:200px; width:auto; vertical-align:middle; margin-right:10px;"><br>
+  ${order.items
+    .map(
+      (item) =>
+        `<li>
+      <img src="${item.imageUrl || ""}" alt="${
+          item.product
+        }"  style="height:200px; width:auto; vertical-align:middle; margin-right:10px;"><br>
       ${item.quantity}x ${item.product} (Size: ${item.size})
     </li>`
-  ).join('')}
+    )
+    .join("")}
 </ul>
 
-        ${order.status === 'Pending' ? `
+        ${
+          order.status === "Pending"
+            ? `
           <button onclick="markCompleted('${order._id}')">Mark as Completed</button>
-        ` : ''}
+        `
+            : ""
+        }
       `;
-      container.appendChild(div);
-    });
-  }
+          container.appendChild(div);
+        });
+      }
 
-  async function markCompleted(orderId) {
-    await fetch(`/admin/orders/${orderId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'Completed' })
-    });
-    fetchOrders();
-  }
+      async function markCompleted(orderId) {
+        await fetch(`/admin/orders/${orderId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "Completed" }),
+        });
+        fetchOrders();
+      }
 
-async function loadProducts() {
-  const res = await fetch('/admin/products');
-  const products = await res.json();
-  const list = document.getElementById('product-list');
-  list.innerHTML = ''; // Clear the list
+      async function loadProducts() {
+        const res = await fetch("/admin/products");
+        const products = await res.json();
+        const list = document.getElementById("product-list");
+        list.innerHTML = ""; // Clear the list
 
-  products.forEach(p => {
-    const card = document.createElement('div');
-    card.className = 'product-card';
-    card.innerHTML = `
-      <img src="${p.imageUrls?.[0] || ''}" alt="${p.name}" style="height:200px; width:auto;"/>
+        products.forEach((p) => {
+          const card = document.createElement("div");
+          card.className = "product-card";
+          card.innerHTML = `
+      <img src="${p.imageUrls?.[0] || ""}" alt="${
+            p.name
+          }" style="height:200px; width:auto;"/>
       <h3>${p.name}</h3>
       <p>NRS. ${p.price}</p>
       <div style="display: flex; gap: 0.5em; justify-content: center;">
-        <button onclick="editProduct(${JSON.stringify(p).replace(/"/g, '&quot;')})">Edit</button>
+        <button onclick="editProduct(${JSON.stringify(p).replace(
+          /"/g,
+          "&quot;"
+        )})">Edit</button>
         <button onclick="deleteProduct('${p._id}')">Delete</button>
       </div>
     `;
-    list.appendChild(card);
-  });
-}
+          list.appendChild(card);
+        });
+      }
 
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
 
+        const name = document.getElementById("prod-name").value;
+        const description = document.getElementById("prod-desc").value;
+        const price = document.getElementById("prod-price").value;
+        const files = document.getElementById("prod-imgs").files;
 
+        if (editingProductId) {
+          // --- Edit mode ---
+          if (files.length > 0) {
+            const formData = new FormData();
+            formData.append("name", name);
+            formData.append("description", description);
+            formData.append("price", price);
+            for (let i = 0; i < files.length; i++) {
+              formData.append("images", files[i]);
+            }
 
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
+            await fetch(`/admin/products/${editingProductId}`, {
+              method: "PUT",
+              body: formData,
+            });
+          } else {
+            await fetch(`/admin/products/${editingProductId}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ name, description, price }),
+            });
+          }
 
-    const name = document.getElementById('prod-name').value;
-    const description = document.getElementById('prod-desc').value;
-    const price = document.getElementById('prod-price').value;
-    const files = document.getElementById('prod-imgs').files;
+          alert("Product updated!");
+          editingProductId = null;
+          submitBtn.textContent = "Add Product";
+        } else {
+          // --- Add mode ---
+          const formData = new FormData();
+          formData.append("name", name);
+          formData.append("description", description);
+          formData.append("price", price);
+          for (let i = 0; i < files.length; i++) {
+            formData.append("images", files[i]);
+          }
 
-    if (editingProductId) {
-      // --- Edit mode ---
-      if (files.length > 0) {
-        const formData = new FormData();
-        formData.append('name', name);
-        formData.append('description', description);
-        formData.append('price', price);
-        for (let i = 0; i < files.length; i++) {
-          formData.append('images', files[i]);
+          await fetch("/admin/products", {
+            method: "POST",
+            body: formData,
+          });
+
+          alert("Product added!");
         }
 
-        await fetch(`/admin/products/${editingProductId}`, {
-          method: 'PUT',
-          body: formData
-        });
-      } else {
-        await fetch(`/admin/products/${editingProductId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, description, price })
-        });
-      }
-
-      alert('Product updated!');
-      editingProductId = null;
-      submitBtn.textContent = 'Add Product';
-    } else {
-      // --- Add mode ---
-      const formData = new FormData();
-      formData.append('name', name);
-      formData.append('description', description);
-      formData.append('price', price);
-      for (let i = 0; i < files.length; i++) {
-        formData.append('images', files[i]);
-      }
-
-      await fetch('/admin/products', {
-        method: 'POST',
-        body: formData
+        e.target.reset();
+        loadProducts();
       });
 
-      alert('Product added!');
-    }
+      function editProduct(p) {
+        document.getElementById("prod-name").value = p.name;
+        document.getElementById("prod-desc").value = p.description;
+        document.getElementById("prod-price").value = p.price;
+        document.getElementById("prod-imgs").value = "";
+        editingProductId = p._id;
+        submitBtn.textContent = "Update Product";
+      }
 
-    e.target.reset();
-    loadProducts();
-  });
+      async function deleteProduct(id) {
+        await fetch(`/admin/products/${id}`, { method: "DELETE" });
+        loadProducts();
+      }
 
-  function editProduct(p) {
-    document.getElementById('prod-name').value = p.name;
-    document.getElementById('prod-desc').value = p.description;
-    document.getElementById('prod-price').value = p.price;
-    document.getElementById('prod-imgs').value = '';
-    editingProductId = p._id;
-    submitBtn.textContent = 'Update Product';
-  }
+      function showDashboard() {
+        document.getElementById("login-screen").style.display = "none";
+        document.getElementById("admin-content").style.display = "block";
+        fetchOrders();
+        loadProducts();
+      }
 
-  async function deleteProduct(id) {
-    await fetch(`/admin/products/${id}`, { method: 'DELETE' });
-    loadProducts();
-  }
-
-  function showDashboard() {
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('admin-content').style.display = 'block';
-    fetchOrders();
-    loadProducts();
-  }
-
-  fetchOrders();
-  loadProducts();
-</script>
-
-</body>
+      fetchOrders();
+      loadProducts();
+    </script>
+  </body>
 </html>
